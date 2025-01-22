@@ -1,41 +1,37 @@
 import os
-import re
-import pandas as pd
+import csv
 
-def extract_parameters(file_path):
-    """Extracts parameter values from the .dat file."""
-    with open(file_path, 'r') as file:
-        content = file.read()
-    
-    # Use regex to find parameter values
-    parameters = {}
-    for param in ["a0", "a1", "a2", "a3"]:
-        match = re.search(rf"{param} = ([\d.eE+-]+)", content)
-        if match:
-            parameters[param] = float(match.group(1))
-        else:
-            parameters[param] = None
-    
-    return parameters
+csv_folder_path = 'aunrs860vh'
 
-def process_files(folder_path, output_excel):
-    """Processes all .dat files in the folder and saves parameters to an Excel file."""
-    data = []
+for filename in os.listdir(csv_folder_path):
+    if filename.endswith('.csv'):
+        csv_file_path = os.path.join(csv_folder_path, filename)
+        text_file_path = os.path.splitext(csv_file_path)[0] + '.txt'
 
-    # Iterate through all .dat files in the folder
-    for file_name in os.listdir(folder_path):
-        if file_name.endswith('.dat'):
-            file_path = os.path.join(folder_path, file_name)
-            parameters = extract_parameters(file_path)
-            parameters['file_name'] = file_name  # Add file name for reference
-            data.append(parameters)
+        # Find the highest value in column 2
+        max_value = 0.0
+        with open(csv_file_path, 'r', encoding='latin-1') as csv_file:
+            csv_reader = csv.reader(csv_file)
+            next(csv_reader)  # Skip header row
+            next(csv_reader)  # Skip second row
+            for row_num, row in enumerate(csv_reader, start=3):
+                if row_num > 202:
+                    break
+                column2_value = float(row[1])
+                if column2_value > max_value:
+                    max_value = column2_value
 
-    # Create a DataFrame and save to Excel
-    df = pd.DataFrame(data, columns=['file_name', 'a0', 'a1', 'a2', 'a3'])
-    df.to_excel(output_excel, index=False)
-    print(f"Data saved to {output_excel}")
+        # Convert the CSV file to text file with column 2 normalized
+        with open(csv_file_path, 'r', encoding='latin-1') as csv_file, open(text_file_path, 'w') as text_file:
+            csv_reader = csv.reader(csv_file)
+            next(csv_reader)  # Skip header row
+            next(csv_reader)  # Skip second row
+            for row_num, row in enumerate(csv_reader, start=3):
+                if row_num > 202:
+                    break
+                column1_value = row[0]
+                column2_value = float(row[1])
+                normalized_value = column2_value / max_value
+                text_file.write(f'{column1_value}, {normalized_value}\n')
 
-# Example usage
-folder_path = "aunrs860vv"
-output_excel = "output_parameters.xlsx"
-process_files(folder_path, output_excel)
+print('CSV files converted to text files with normalized column 2 values.')
