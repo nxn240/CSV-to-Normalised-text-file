@@ -1,0 +1,41 @@
+import os
+import re
+import pandas as pd
+
+def extract_parameters(file_path):
+    """Extracts parameter values from the .dat file."""
+    with open(file_path, 'r') as file:
+        content = file.read()
+    
+    # Use regex to find parameter values
+    parameters = {}
+    for param in ["a0", "a1", "a2", "a3"]:
+        match = re.search(rf"{param} = ([\d.eE+-]+)", content)
+        if match:
+            parameters[param] = float(match.group(1))
+        else:
+            parameters[param] = None
+    
+    return parameters
+
+def process_files(folder_path, output_excel):
+    """Processes all .dat files in the folder and saves parameters to an Excel file."""
+    data = []
+
+    # Iterate through all .dat files in the folder
+    for file_name in os.listdir(folder_path):
+        if file_name.endswith('.dat'):
+            file_path = os.path.join(folder_path, file_name)
+            parameters = extract_parameters(file_path)
+            parameters['file_name'] = file_name  # Add file name for reference
+            data.append(parameters)
+
+    # Create a DataFrame and save to Excel
+    df = pd.DataFrame(data, columns=['file_name', 'a0', 'a1', 'a2', 'a3'])
+    df.to_excel(output_excel, index=False)
+    print(f"Data saved to {output_excel}")
+
+# Example usage
+folder_path = "aunrs860vv"
+output_excel = "output_parameters.xlsx"
+process_files(folder_path, output_excel)
